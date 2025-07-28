@@ -1,0 +1,1297 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Study Smart - Learning Platform Design</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Kigali Calm (Light neutrals, subtle blue accent) -->
+    <!-- Application Structure Plan: Two main states: a pre-login "Landing Page" and a post-login "Learning Platform". The Landing Page introduces Study Smart, its features, and quotes, with clear Login/Signup calls to action. Upon successful login, the Landing Page is hidden, and the full Learning Platform (Dashboard, Subjects, AI Tutor, etc.) becomes visible, with its own dedicated navigation. Modals for Login, Payment, Study Tips, Quiz Generator, and Concept Simplifier are used. Payment is accessible only post-login. -->
+    <!-- Visualization & Content Choices: Landing Page -> Goal: Inform/Engage -> Method: Hero, Feature Cards, Testimonials, Call-to-actions. Dashboard -> Goal: Inform/Track -> Method: Card layouts for progress, reminders, quick stats. Subjects -> Goal: Organize/Browse -> Method: Grid of subject cards, clicking reveals a list of topics/lessons. AI Tutor -> Goal: Interact -> Method: Chat interface with LLM. Memory Training -> Goal: Inform/Motivate -> Method: Descriptive card. Gamified Learning -> Goal: Motivate -> Method: Leaderboard/Badge display. Login/Payment -> Goal: Access/Transaction -> Method: Modal forms. All icons use Unicode characters. LLM features (Study Tips, Quiz, Simplifier) are integrated into the post-login dashboard. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .nav-active {
+            color: #3b82f6;
+            font-weight: 600;
+        }
+        .main-content-section {
+            display: none;
+        }
+        .main-content-section.active {
+            display: block;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.6);
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: auto;
+            padding: 2rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            position: relative;
+            max-width: 500px;
+            width: 90%;
+        }
+        .close-button {
+            position: absolute;
+            top: 1rem;
+            right: 1.5rem;
+            font-size: 1.5rem;
+            font-weight: bold;
+            cursor: pointer;
+            color: #94a3b8;
+        }
+        .close-button:hover {
+            color: #64748b;
+        }
+        .loading-indicator {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 50px;
+        }
+        .loading-spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left-color: #3b82f6;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Dark Mode Styles */
+        body.dark-mode {
+            background-color: #1a202c; /* Dark slate background */
+            color: #e2e8f0; /* Light text color */
+        }
+
+        body.dark-mode .bg-white,
+        body.dark-mode .bg-slate-50 {
+            background-color: #2d3748; /* Darker background for cards/sections */
+            color: #e2e8f0;
+        }
+
+        body.dark-mode .text-slate-800,
+        body.dark-mode .text-slate-900 {
+            color: #e2e8f0;
+        }
+
+        body.dark-mode .text-slate-600,
+        body.dark-mode .text-slate-700 {
+            color: #cbd5e0;
+        }
+
+        body.dark-mode .border-slate-300 {
+            border-color: #4a5568;
+        }
+
+        body.dark-mode .bg-slate-100 {
+            background-color: #2c3440;
+        }
+
+        body.dark-mode .bg-blue-100 {
+            background-color: #2a4365;
+        }
+
+        body.dark-mode .bg-slate-200 {
+            background-color: #4a5568;
+        }
+        
+        body.dark-mode .bg-slate-50 {
+            background-color: #2d3748;
+        }
+
+        body.dark-mode .modal-content {
+            background-color: #2d3748;
+            color: #e2e8f0;
+        }
+
+        body.dark-mode .close-button {
+            color: #cbd5e0;
+        }
+        body.dark-mode .close-button:hover {
+            color: #a0aec0;
+        }
+        body.dark-mode input,
+        body.dark-mode textarea,
+        body.dark-mode select {
+            background-color: #4a5568;
+            border-color: #64748b;
+            color: #e2e8f0;
+        }
+        body.dark-mode input::placeholder,
+        body.dark-mode textarea::placeholder {
+            color: #a0aec0;
+        }
+        body.dark-mode .bg-white\/80 {
+            background-color: rgba(45, 55, 72, 0.8);
+        }
+        body.dark-mode .shadow-sm {
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.5);
+        }
+        body.dark-mode .shadow-lg {
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -2px rgba(0, 0, 0, 0.25);
+        }
+        body.dark-mode .shadow-md {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -1px rgba(0, 0, 0, 0.25);
+        }
+        body.dark-mode .shadow-inner {
+            box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.5);
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+
+    <!-- Header Navigation (Dynamic based on login state) -->
+    <header class="bg-white/80 backdrop-blur-lg sticky top-0 z-50 shadow-sm">
+        <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <a href="#" class="text-2xl font-bold text-blue-600">Study Smart</a>
+            <!-- Pre-Login Navigation -->
+            <div id="pre-login-nav" class="flex space-x-8 md:flex">
+                <a href="#how-it-works" class="text-slate-600 hover:text-blue-600 transition">How it Works</a>
+                <a href="#landing-features" class="text-slate-600 hover:text-blue-600 transition">Features</a>
+                <!-- Login and Sign Up buttons removed from header for pre-login state -->
+            </div>
+            <!-- Post-Login Navigation -->
+            <div id="post-login-nav" class="hidden md:flex space-x-4 items-center">
+                <a href="#" data-section="dashboard" class="nav-link nav-active text-slate-600 hover:text-blue-600 transition">Dashboard</a>
+                <a href="#" data-section="subjects" class="nav-link text-slate-600 hover:text-blue-600 transition">Subjects</a>
+                <a href="#" data-section="ai-tutor" class="nav-link text-slate-600 hover:text-blue-600 transition">AI Tutor</a>
+                <a href="#" data-section="memory-training" class="nav-link text-slate-600 hover:text-blue-600 transition">Memory Training</a>
+                <a href="#" data-section="gamified-learning" class="nav-link text-slate-600 hover:text-blue-600 transition">Gamified</a>
+                <button id="theme-toggle-button-nav" class="p-2 rounded-full bg-slate-100 hover:bg-slate-200 transition">
+                    <span id="theme-icon" class="text-xl">☀️</span>
+                </button>
+                <button id="logout-button-nav" class="bg-red-600 text-white font-bold py-2 px-4 rounded-full hover:bg-red-700 transition">Logout</button>
+            </div>
+            <button id="mobile-menu-button" class="md:hidden text-slate-800">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
+            </button>
+        </nav>
+        <!-- Mobile Menu (Dynamic based on login state) -->
+        <div id="mobile-menu" class="hidden md:hidden px-6 pb-4">
+            <!-- Pre-Login Mobile Nav -->
+            <div id="pre-login-mobile-nav" class="flex flex-col">
+                <a href="#how-it-works" class="block py-2 text-slate-600 hover:text-blue-600 transition">How it Works</a>
+                <a href="#landing-features" class="block py-2 text-slate-600 hover:text-blue-600 transition">Features</a>
+                <button id="login-button-landing-mobile" class="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded-full hover:bg-blue-700 transition mt-2">Login</button>
+                <button id="signup-button-landing-mobile" class="w-full bg-green-600 text-white font-bold py-2 px-4 rounded-full hover:bg-green-700 transition mt-2">Sign Up</button>
+            </div>
+            <!-- Post-Login Mobile Nav -->
+            <div id="post-login-mobile-nav" class="hidden">
+                <a href="#" data-section="dashboard" class="nav-link block py-2 text-slate-600 hover:text-blue-600 transition">Dashboard</a>
+                <a href="#" data-section="subjects" class="nav-link block py-2 text-slate-600 hover:text-blue-600 transition">Subjects</a>
+                <a href="#" data-section="ai-tutor" class="nav-link block py-2 text-slate-600 hover:text-blue-600 transition">AI Tutor</a>
+                <a href="#" data-section="memory-training" class="nav-link block py-2 text-slate-600 hover:text-blue-600 transition">Memory Training</a>
+                <a href="#" data-section="gamified-learning" class="nav-link block py-2 text-slate-600 hover:text-blue-600 transition">Gamified</a>
+                <button id="theme-toggle-button-mobile" class="w-full p-2 rounded-full bg-slate-100 hover:bg-slate-200 transition mt-2">
+                    <span id="theme-icon-mobile" class="text-xl">☀️</span>
+                </button>
+                <button id="logout-button-mobile" class="w-full bg-red-600 text-white font-bold py-2 px-4 rounded-full hover:bg-red-700 transition mt-2">Logout</button>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <!-- Landing Page (Pre-Login) -->
+        <section id="landing-page" class="bg-white py-16 md:py-24">
+            <div class="container mx-auto px-6 text-center">
+                <div class="mb-12">
+                    <!-- Logo Placeholder -->
+                    <div class="w-32 h-32 mx-auto bg-blue-100 rounded-full flex items-center justify-center mb-6 overflow-hidden">
+                        <img src="studysmartlogo.png" alt="Study Smart Logo" class="w-full h-full object-cover" onerror="this.onerror=null;this.src='https://placehold.co/128x128/ADD8E6/000000?text=Logo';">
+                    </div>
+                    <h1 class="text-2xl md:text-4xl font-extrabold text-slate-900 leading-tight">Study Smart: <span class="text-blue-600">Learn,Pass,Grow,Achieve.</span></h1>
+                    <p class="mt-6 max-w-3xl mx-auto text-lg md:text-xl text-slate-600">Empowering Every Rwandan Student to excel in National Exams and beyond.</p>
+                </div>
+
+                <div class="mt-10 mb-16">
+                    <button id="login-button-hero" class="bg-blue-600 text-white font-bold py-3 px-8 rounded-full hover:bg-blue-700 transition-transform transform hover:scale-105 mr-4">Login</button>
+                    <button id="signup-button-hero" class="bg-green-600 text-white font-bold py-3 px-8 rounded-full hover:bg-green-700 transition-transform transform hover:scale-105">Sign Up</button>
+                </div>
+
+                <section id="how-it-works" class="py-12">
+                    <h2 class="text-3xl md:text-4xl font-bold text-slate-900 mb-8">How Study Smart Works</h2>
+                    <p class="max-w-3xl mx-auto text-lg text-slate-600 mb-12">Study Smart is a national education mission combining AI tutoring, smart revision tools, and student motivation systems. We build confidence, access, and a brighter future by enabling learners to:</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                        <div class="bg-white p-6 rounded-xl shadow-lg flex flex-col items-center text-center">
+                            <span class="text-5xl text-blue-500 mb-4">✅</span>
+                            <h3 class="text-xl font-semibold mb-2">Pass Exams Confidently</h3>
+                            <p class="text-slate-600 text-sm">Equip students with the knowledge and skills to excel.</p>
+                        </div>
+                        <div class="bg-white p-6 rounded-xl shadow-lg flex flex-col items-center text-center">
+                            <span class="text-5xl text-green-500 mb-4">🧠</span>
+                            <h3 class="text-xl font-semibold mb-2">Study Smarter</h3>
+                            <p class="text-slate-600 text-sm">Introduce efficient learning techniques and personalized plans.</p>
+                        </div>
+                        <div class="bg-white p-6 rounded-xl shadow-lg flex flex-col items-center text-center">
+                            <span class="text-5xl text-purple-500 mb-4">🤝</span>
+                            <h3 class="text-xl font-semibold mb-2">Get Real-time Support</h3>
+                            <p class="text-slate-600 text-sm">Provide immediate help, mentorship, and revision guidance.</p>
+                        </div>
+                        <div class="bg-white p-6 rounded-xl shadow-lg flex flex-col items-center text-center">
+                            <span class="text-5xl text-yellow-500 mb-4">🌱</span>
+                            <h3 class="text-xl font-semibold mb-2">Develop Life Skills</h3>
+                            <p class="text-slate-600 text-sm">Foster critical thinking, problem-solving, and useful habits.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="landing-features" class="py-12 mt-16">
+                    <h2 class="text-3xl md:text-4xl font-bold text-slate-900 mb-8">Key Features at a Glance</h2>
+                    <p class="max-w-3xl mx-auto text-lg text-slate-600 mb-12">Study Smart offers innovative tools designed to personalize and optimize your learning journey.</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                        <div class="bg-slate-50 p-6 rounded-xl shadow-md flex flex-col items-center text-center">
+                            <span class="text-5xl text-blue-500 mb-4">🤖</span>
+                            <h3 class="text-xl font-bold mb-2">AI-Powered Tutor</h3>
+                            <p class="text-slate-600 text-sm">Instant, personalized help with any subject, adapting to your style.</p>
+                        </div>
+                        <div class="bg-slate-50 p-6 rounded-xl shadow-md flex flex-col items-center text-center">
+                            <span class="text-5xl text-green-500 mb-4">📈</span>
+                            <h3 class="text-xl font-bold mb-2">Progress Tracker</h3>
+                            <p class="text-slate-600 text-sm">Identifies weak topics and suggests targeted revision for mastery.</p>
+                        </div>
+                        <div class="bg-slate-50 p-6 rounded-xl shadow-md flex flex-col items-center text-center">
+                            <span class="text-5xl text-yellow-500 mb-4">🏆</span>
+                            <h3 class="text-xl font-bold mb-2">Gamified Learning</h3>
+                            <p class="text-slate-600 text-sm">Badges, leaderboards, and streaks to boost engagement and fun.</p>
+                        </div>
+                        <div class="bg-slate-50 p-6 rounded-xl shadow-md flex flex-col items-center text-center">
+                            <span class="text-5xl text-red-500 mb-4">📶</span>
+                            <h3 class="text-xl font-bold mb-2">Offline Mode</h3>
+                            <p class="text-slate-600 text-sm">Download lessons & quizzes to learn anytime, anywhere.</p>
+                        </div>
+                        <div class="bg-slate-50 p-6 rounded-xl shadow-md flex flex-col items-center text-center">
+                            <span class="text-5xl text-purple-500 mb-4">⏰</span>
+                            <h3 class="text-xl font-bold mb-2">Study Scheduler</h3>
+                            <p class="text-slate-600 text-sm">Personalized reminders and dynamic calendar for daily habits.</p>
+                        </div>
+                        <div class="bg-slate-50 p-6 rounded-xl shadow-md flex flex-col items-center text-center">
+                            <span class="text-5xl text-orange-500 mb-4">💡</span>
+                            <h3 class="text-xl font-bold mb-2">Study Tips Engine</h3>
+                            <p class="text-slate-600 text-sm">AI-powered tips on *how* to study better, based on your performance.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="py-12 mt-16 bg-slate-100 rounded-xl shadow-inner p-8">
+                    <h2 class="text-3xl md:text-4xl font-bold text-slate-900 mb-8">Building Tomorrow, Today through Study Smart</h2>
+                    <p class="max-w-3xl mx-auto text-lg md:text-xl text-slate-700 italic mb-6">"Education is the most powerful weapon which you can use to change the world.<strong>-Nelson Mandela</strong>"</p>
+                    <p class="max-w-3xl mx-auto text-lg md:text-xl text-slate-700 italic">"The mind is not a vessel to be filled but a fire to be ignited." <strong>- Plutarch</strong>"</p>
+                      <p class="max-w-3xl mx-auto text-lg md:text-xl text-slate-700 italic">"An investment in knowledge pays the best interest.  <strong>- Benjamin Franklin</strong>"</p>
+                </section>
+            </div>
+        </section>
+
+        <!-- Learning Platform Content (Post-Login) -->
+        <div id="learning-platform-container" class="hidden py-10">
+            <div class="container mx-auto px-6">
+                <!-- Dashboard Section -->
+                <section id="dashboard" class="main-content-section active">
+                    <h2 class="text-3xl md:text-4xl font-bold text-slate-900 mb-8 text-center">Your Learning Dashboard</h2>
+                    <p class="mt-4 max-w-2xl mx-auto text-lg text-slate-600 mb-12 text-center">Welcome back! Here's a quick overview of your progress, upcoming study sessions, and recent achievements. Stay on track to achieve your goals!</p>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                        <!-- Learning Progress Track -->
+                        <div class="bg-white p-6 rounded-xl shadow-lg">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-xl font-semibold">Learning Progress</h3>
+                                <span class="text-blue-600 text-3xl">📈</span>
+                            </div>
+                            <p class="text-slate-600 mb-2">Overall Completion: <span class="font-bold text-blue-600">75%</span></p>
+                            <div class="w-full bg-slate-200 rounded-full h-2.5 mb-4">
+                                <div class="bg-blue-600 h-2.5 rounded-full" style="width: 75%;"></div>
+                            </div>
+                            <p class="text-slate-600 mb-2">Weak Topics: <span class="font-bold text-red-600">Algebra, Chemistry Reactions</span></p>
+                            <button class="bg-blue-100 text-blue-700 text-sm py-2 px-4 rounded-full hover:bg-blue-200 transition mt-2">View Detailed Progress</button>
+                        </div>
+
+                        <!-- Learning Schedule Reminder -->
+                        <div class="bg-white p-6 rounded-xl shadow-lg">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-xl font-semibold">Upcoming Study Sessions</h3>
+                                <span class="text-green-600 text-3xl">⏰</span>
+                            </div>
+                            <ul class="space-y-2 text-slate-600">
+                                <li><span class="font-bold">Today, 4:00 PM:</span> Math - Geometry</li>
+                                <li><span class="font-bold">Tomorrow, 9:00 AM:</span> Physics - Electricity</li>
+                                <li><span class="font-bold">Mon, 6:00 PM:</span> History - Rwandan History</li>
+                            </ul>
+                            <button class="bg-green-100 text-green-700 text-sm py-2 px-4 rounded-full hover:bg-green-200 transition mt-4">Manage Schedule</button>
+                        </div>
+
+                        <!-- Gamified Learning Summary -->
+                        <div class="bg-white p-6 rounded-xl shadow-lg">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-xl font-semibold">Your Achievements</h3>
+                                <span class="text-yellow-600 text-3xl">🏆</span>
+                            </div>
+                            <p class="text-slate-600 mb-2">Current Streak: <span class="font-bold text-yellow-600">15 Days!</span> 🔥</p>
+                            <p class="text-slate-600 mb-2">Badges Earned: <span class="font-bold">5</span> (e.g., "Math Whiz", "History Buff")</p>
+                            <p class="text-slate-600 mb-2">Leaderboard Rank: <span class="font-bold">#7</span> in Physics</p>
+                            <button class="bg-yellow-100 text-yellow-700 text-sm py-2 px-4 rounded-full hover:bg-yellow-200 transition mt-4">View Leaderboard & Badges</button>
+                        </div>
+
+                        <!-- User Activity Log (placeholder) -->
+                        <div class="bg-white p-6 rounded-xl shadow-lg md:col-span-3">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-xl font-semibold">Recent Activity</h3>
+                                <span class="text-purple-600 text-3xl">📜</span>
+                            </div>
+                            <div class="bg-slate-50 p-4 rounded-lg border border-slate-200 h-40 overflow-y-auto text-sm text-slate-600">
+                                <p class="mb-2"><strong>Today:</strong> Completed "Algebra Basics" quiz (85%).</p>
+                                <p class="mb-2"><strong>Yesterday:</strong> 30-min session on "Physics: Motion."</p>
+                                <p class="mb-2"><strong>2 days ago:</strong> Reviewed weak topics in Biology (Cells).</p>
+                                <p class="mb-2"><strong>3 days ago:</strong> Earned "Diligent Learner" badge! 🌟</p>
+                                <p class="mb-2"><strong>4 days ago:</strong> Started "Introduction to Rwandan History" lesson.</p>
+                                <p class="mb-2"><strong>5 days ago:</strong> Used AI Tutor for help with Chemistry stoichiometry.</p>
+                                <p class="text-center text-slate-400 mt-4">Your detailed study history will appear here.</p>
+                            </div>
+                        </div>
+
+                        <!-- Generate Study Tips Card -->
+                        <div class="bg-white p-6 rounded-xl shadow-lg">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-xl font-semibold">Personalized Study Tips</h3>
+                                <span class="text-teal-600 text-3xl">✨</span>
+                            </div>
+                            <p class="text-slate-600 mb-4">Get AI-powered study advice tailored to your needs. Ask for tips on any topic or learning challenge!</p>
+                            <button id="generate-tips-button" class="bg-teal-600 text-white font-bold py-2 px-4 rounded-full hover:bg-teal-700 transition-transform transform hover:scale-105 w-full">Generate Study Tips ✨</button>
+                        </div>
+
+                        <!-- Quiz Generator Card -->
+                        <div class="bg-white p-6 rounded-xl shadow-lg">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-xl font-semibold">Quiz Generator</h3>
+                                <span class="text-indigo-600 text-3xl">❓</span>
+                            </div>
+                            <p class="text-slate-600 mb-4">Create custom quizzes on any topic. Just tell the AI what you want to be tested on!</p>
+                            <button id="generate-quiz-button" class="bg-indigo-600 text-white font-bold py-2 px-4 rounded-full hover:bg-indigo-700 transition-transform transform hover:scale-105 w-full">Generate Quiz ✨</button>
+                        </div>
+
+                        <!-- Concept Simplifier Card -->
+                        <div class="bg-white p-6 rounded-xl shadow-lg">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-xl font-semibold">Concept Simplifier</h3>
+                                <span class="text-pink-600 text-3xl">💡</span>
+                            </div>
+                            <p class="text-slate-600 mb-4">Struggling with a complex idea? Let the AI simplify it for you in easy-to-understand terms.</p>
+                            <button id="simplify-concept-button" class="bg-pink-600 text-white font-bold py-2 px-4 rounded-full hover:bg-pink-700 transition-transform transform hover:scale-105 w-full">Simplify It!</button>
+                        </div>
+
+                        <!-- Upgrade to Premium Card -->
+                        <div class="bg-white p-6 rounded-xl shadow-lg md:col-span-3 text-center border-2 border-green-300">
+                            <h3 class="text-xl font-semibold mb-4 text-green-700">Unlock More Power!</h3>
+                            <p class="text-slate-600 mb-4">Upgrade to a Premium plan for unlimited AI interactions, advanced content, and exclusive mentorship access.</p>
+                            <button id="upgrade-premium-button" class="bg-green-600 text-white font-bold py-3 px-8 rounded-full hover:bg-green-700 transition-transform transform hover:scale-105">Upgrade to Premium</button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Subjects Section -->
+                <section id="subjects" class="main-content-section hidden">
+                    <h2 class="text-3xl md:text-4xl font-bold text-slate-900 mb-8 text-center">Rwandan Education System Overview</h2>
+                    <p class="mt-4 max-w-2xl mx-auto text-lg text-slate-600 mb-12 text-center">Explore the structure, levels, and national exams of the Rwandan education system.</p>
+
+                    <div id="rwanda-edu-cards-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <!-- Cards for each education level will be dynamically generated here -->
+                    </div>
+
+                    <!-- Subject Content Placeholder (hidden by default) -->
+                    <div id="subject-content-view" class="bg-white p-8 rounded-xl shadow-lg mt-12 hidden">
+                        <button class="text-blue-600 hover:underline mb-6" id="back-to-subjects">← Back to Overview</button>
+                        <h3 id="subject-title" class="text-3xl font-bold text-slate-900 mb-6"></h3>
+                        <div id="subject-detail-content" class="space-y-4">
+                            <!-- Detailed content for each education level will be dynamically loaded here -->
+                        </div>
+                    </div>
+                </section>
+
+                <!-- AI Tutor Section -->
+                <section id="ai-tutor" class="main-content-section hidden">
+                    <h2 class="text-3xl md:text-4xl font-bold text-slate-900 mb-8 text-center">Your AI-Powered Tutor ✨</h2>
+                    <p class="mt-4 max-w-2xl mx-auto text-lg text-slate-600 mb-12 text-center">Need help with a concept? Ask our intelligent AI tutor anything! Get instant explanations, examples, and practice questions tailored to your needs.</p>
+
+                    <div class="max-w-3xl mx-auto bg-white rounded-xl shadow-lg h-[60vh] flex flex-col">
+                        <div id="chat-messages" class="flex-grow p-6 overflow-y-auto space-y-4 bg-slate-50 rounded-t-xl">
+                            <!-- Initial AI message -->
+                            <div class="flex justify-start">
+                                <div class="bg-blue-100 text-blue-800 p-3 rounded-lg max-w-[75%]">Hello! How can I help you learn today?</div>
+                            </div>
+                        </div>
+                        <div class="p-4 border-t border-slate-200 flex items-center gap-4">
+                            <input type="text" id="ai-tutor-input" class="flex-grow p-3 border border-slate-300 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Ask your question...">
+                            <button id="ai-tutor-send-button" class="bg-blue-600 text-white p-3 rounded-full hover:bg-blue-700 transition">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                            </button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Memory Training Section -->
+                <section id="memory-training" class="main-content-section hidden">
+                    <h2 class="text-3xl md:text-4xl font-bold text-slate-900 mb-8 text-center">Boost Your Memory</h2>
+                    <p class="mt-4 max-w-2xl mx-auto text-lg text-slate-600 mb-12 text-center">Unlock your brain's potential with our specialized memory training exercises. From flashcards to spaced repetition, we help you retain information effectively.</p>
+
+                    <div class="max-w-3xl mx-auto bg-white p-8 rounded-xl shadow-lg text-center">
+                        <span class="text-7xl mb-6 block">🧠💡</span>
+                        <h3 class="text-2xl font-bold mb-4">Daily Memory Challenge: Active Recall</h3>
+                        <p class="text-slate-600 mb-6">Review a concept you learned yesterday without looking at your notes. Try to explain it in your own words. Then, check your notes to see what you remembered!</p>
+                        <button class="bg-purple-600 text-white font-bold py-3 px-8 rounded-full hover:bg-purple-700 transition-transform transform hover:scale-105">Start Memory Exercise</button>
+                        <p class="text-sm text-slate-500 mt-4">Upcoming: Spaced Repetition Flashcards, Mnemonic Generators</p>
+                    </div>
+                </section>
+
+                <!-- Gamified Learning Section -->
+                <section id="gamified-learning" class="main-content-section hidden">
+                    <h2 class="text-3xl md:text-4xl font-bold text-slate-900 mb-8 text-center">Gamified Learning: Earn & Compete!</h2>
+                    <p class="mt-4 max-w-2xl mx-auto text-lg text-slate-600 mb-12 text-center">Stay motivated and challenge yourself! Track your streaks, earn badges, and see how you rank on the leaderboards.</p>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+                        <!-- Streaks & Badges -->
+                        <div class="bg-white p-6 rounded-xl shadow-lg">
+                            <h3 class="text-xl font-semibold mb-4 text-center">Your Badges & Streaks</h3>
+                            <div class="flex justify-around items-center mb-6">
+                                <div class="text-center">
+                                    <span class="text-5xl block mb-2">🔥</span>
+                                    <p class="font-bold text-slate-700">15-Day Streak</p>
+                                </div>
+                                <div class="text-center">
+                                    <span class="text-5xl block mb-2">🌟</span>
+                                    <p class="font-bold text-slate-700">5 Badges</p>
+                                </div>
+                                <div class="text-center">
+                                    <span class="text-5xl block mb-2">💯</span>
+                                    <p class="font-bold text-slate-700">Quiz Master</p>
+                                </div>
+                            </div>
+                            <div class="text-center">
+                                <button class="bg-yellow-100 text-yellow-700 text-sm py-2 px-4 rounded-full hover:bg-yellow-200 transition">View All Badges</button>
+                            </div>
+                        </div>
+
+                        <!-- Leaderboard -->
+                        <div class="bg-white p-6 rounded-xl shadow-lg">
+                            <h3 class="text-xl font-semibold mb-4 text-center">Subject Leaderboard (Physics)</h3>
+                            <ul class="space-y-3 text-slate-700">
+                                <li class="flex justify-between items-center bg-slate-50 p-3 rounded-lg">
+                                    <span class="font-bold">#1 Mozart Imfura</span>
+                                    <span class="text-blue-600">1250 pts</span>
+                                </li>
+                                <li class="flex justify-between items-center bg-slate-50 p-3 rounded-lg">
+                                    <span class="font-bold">#2 Schadrack Irafasha</span>
+                                    <span class="text-blue-600">1180 pts</span>
+                                </li>
+                                <li class="flex justify-between items-center bg-blue-100 p-3 rounded-lg border-2 border-blue-300">
+                                    <span class="font-bold text-blue-800">#7 You</span>
+                                    <span class="font-bold text-blue-800">920 pts</span>
+                                </li>
+                                <li class="flex justify-between items-center bg-slate-50 p-3 rounded-lg">
+                                    <span class="font-bold">#8 Joel Rutayisire</span>
+                                    <span class="text-blue-600">890 pts</span>
+                                </li>
+                            </ul>
+                            <div class="text-center mt-4">
+                                <button class="bg-yellow-100 text-yellow-700 text-sm py-2 px-4 rounded-full hover:bg-yellow-200 transition">View All Leaderboards</button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </main>
+
+    <!-- Login Modal -->
+    <div id="login-modal" class="modal">
+        <div class="modal-content max-w-md">
+            <span class="close-button" id="close-login-modal">&times;</span>
+            <h2 class="text-2xl font-bold text-slate-900 mb-6 text-center">Login to Study Smart</h2>
+            <form action="#" method="POST" class="space-y-4">
+                <div>
+                    <label for="modal-email" class="block text-sm font-medium text-slate-700 mb-1">Email or Username</label>
+                    <input type="email" id="modal-email" name="email" class="w-full p-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="shineirafasha@gmail.com" required>
+                </div>
+                <div>
+                    <label for="modal-password" class="block text-sm font-medium text-slate-700 mb-1">Password</label>
+                    <input type="password" id="modal-password" name="password" class="w-full p-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="********" required>
+                </div>
+                <button type="submit" id="perform-login-button" class="bg-blue-600 text-white font-bold py-3 px-6 rounded-full hover:bg-blue-700 transition-transform transform hover:scale-105 w-full">Login</button>
+                <p class="text-center text-sm text-slate-600 mt-2">Don't have an account? <a href="#" class="text-blue-600 hover:underline" id="signup-from-login">Sign Up</a></p>
+                <p class="text-center text-sm text-slate-500 mt-2">Password: 1234567890</p>
+            </form>
+        </div>
+    </div>
+
+    <!-- Payment Modal -->
+    <div id="payment-modal" class="modal">
+        <div class="modal-content max-w-md">
+            <span class="close-button" id="close-payment-modal">&times;</span>
+            <h2 class="text-2xl font-bold text-slate-900 mb-6 text-center">Choose Your Plan</h2>
+            <p class="text-slate-600 mb-4 text-center">Unlock all premium features and content with a subscription.</p>
+            <form action="#" method="POST" class="space-y-4">
+                <div>
+                    <label for="modal-plan" class="block text-sm font-medium text-slate-700 mb-1">Select Plan</label>
+                    <select id="modal-plan" name="plan" class="w-full p-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="trial">7-Day Free Trial</option>
+                        <option value="monthly">Monthly - RWF 5,000</option>
+                        <option value="quarterly">Quarterly - RWF 12,000</option>
+                        <option value="annual">Annual - RWF 45,000</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="modal-payment-method" class="block text-sm font-medium text-slate-700 mb-1">Payment Method</label>
+                    <select id="modal-payment-method" name="payment-method" class="w-full p-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="mobile-money">Mobile Money (MTN MoMo, Airtel Money)</option>
+                        <option value="card">Credit/Debit Card</option>
+                    </select>
+                </div>
+                <button type="submit" class="bg-green-600 text-white font-bold py-3 px-6 rounded-full hover:bg-green-700 transition-transform transform hover:scale-105 w-full">Proceed to Payment</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Study Tips Modal -->
+    <div id="study-tips-modal" class="modal">
+        <div class="modal-content max-w-md">
+            <span class="close-button" id="close-study-tips-modal">&times;</span>
+            <h2 class="text-2xl font-bold text-slate-900 mb-6 text-center">Generate Study Tips ✨</h2>
+            <p class="text-slate-600 mb-4 text-center">Tell me what kind of study tips you're looking for!</p>
+            <div class="space-y-4">
+                <div>
+                    <label for="tips-topic-input" class="block text-sm font-medium text-slate-700 mb-1">Topic or Challenge (e.g., "math exam," "staying focused")</label>
+                    <input type="text" id="tips-topic-input" class="w-full p-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" placeholder="e.g., How to prepare for a physics exam">
+                </div>
+                <button id="get-tips-button" class="bg-teal-600 text-white font-bold py-3 px-6 rounded-full hover:bg-teal-700 transition-transform transform hover:scale-105 w-full">Get Tips</button>
+                <div id="tips-output" class="bg-slate-50 p-4 rounded-lg border border-slate-200 min-h-[100px] max-h-[300px] overflow-y-auto text-sm text-slate-700 mt-4">
+                    <p class="text-center text-slate-400">Your personalized study tips will appear here.</p>
+                </div>
+                <div id="tips-loading" class="loading-indicator hidden">
+                    <div class="loading-spinner"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quiz Generator Modal -->
+    <div id="quiz-generator-modal" class="modal">
+        <div class="modal-content max-w-md">
+            <span class="close-button" id="close-quiz-generator-modal">&times;</span>
+            <h2 class="text-2xl font-bold text-slate-900 mb-6 text-center">Generate Quiz Questions ✨</h2>
+            <p class="text-slate-600 mb-4 text-center">Tell me the topic or paste text to generate quiz questions!</p>
+            <div class="space-y-4">
+                <div>
+                    <label for="quiz-topic-input" class="block text-sm font-medium text-slate-700 mb-1">Topic (e.g., "Photosynthesis," "Rwandan History") or Paste Text</label>
+                    <textarea id="quiz-topic-input" class="w-full p-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 h-32" placeholder="e.g., Photosynthesis or paste a paragraph about it..."></textarea>
+                </div>
+                <button id="get-quiz-button" class="bg-indigo-600 text-white font-bold py-3 px-6 rounded-full hover:bg-indigo-700 transition-transform transform hover:scale-105 w-full">Generate Quiz</button>
+                <div id="quiz-output" class="bg-slate-50 p-4 rounded-lg border border-slate-200 min-h-[100px] max-h-[300px] overflow-y-auto text-sm text-slate-700 mt-4">
+                    <p class="text-center text-slate-400">Your generated quiz questions will appear here.</p>
+                </div>
+                <div id="quiz-loading" class="loading-indicator hidden">
+                    <div class="loading-spinner"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Concept Simplifier Modal -->
+    <div id="concept-simplifier-modal" class="modal">
+        <div class="modal-content max-w-md">
+            <span class="close-button" id="close-concept-simplifier-modal">&times;</span>
+            <h2 class="text-2xl font-bold text-slate-900 mb-6 text-center">Simplify a Concept ✨</h2>
+            <p class="text-slate-600 mb-4 text-center">Paste complex text or describe a concept, and I'll simplify it for you!</p>
+            <div class="space-y-4">
+                <div>
+                    <label for="simplify-input" class="block text-sm font-medium text-slate-700 mb-1">Concept or Text to Simplify</label>
+                    <textarea id="simplify-input" class="w-full p-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 h-32" placeholder="e.g., Explain quantum entanglement simply... or paste a complex paragraph."></textarea>
+                </div>
+                <button id="get-simplified-button" class="bg-pink-600 text-white font-bold py-3 px-6 rounded-full hover:bg-pink-700 transition-transform transform hover:scale-105 w-full">Simplify It!</button>
+                <div id="simplified-output" class="bg-slate-50 p-4 rounded-lg border border-slate-200 min-h-[100px] max-h-[300px] overflow-y-auto text-sm text-slate-700 mt-4">
+                    <p class="text-center text-slate-400">The simplified explanation will appear here.</p>
+                </div>
+                <div id="simplified-loading" class="loading-indicator hidden">
+                    <div class="loading-spinner"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="bg-slate-800 text-white py-12 mt-10">
+        <div class="container mx-auto px-6 text-center">
+            <h3 class="text-2xl font-bold">Study Smart: Learn, Grow, Succeed.</h3>
+            <div class="mt-8 text-sm text-slate-400">
+                &copy; 2025 Study Smart. All rights reserved.
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const correctPassword = "1234567890"; // Password for login
+
+            // Main containers
+            const landingPage = document.getElementById('landing-page');
+            const learningPlatformContainer = document.getElementById('learning-platform-container');
+
+            // Navigation elements
+            const preLoginNav = document.getElementById('pre-login-nav');
+            const postLoginNav = document.getElementById('post-login-nav');
+            const preLoginMobileNav = document.getElementById('pre-login-mobile-nav');
+            const postLoginMobileNav = document.getElementById('post-login-mobile-nav');
+            const mobileMenuButton = document.getElementById('mobile-menu-button');
+            const mobileMenu = document.getElementById('mobile-menu');
+
+            // Login/Signup buttons
+            const loginButtonHero = document.getElementById('login-button-hero');
+            const signupButtonHero = document.getElementById('signup-button-hero');
+            const loginButtonLandingMobile = document.getElementById('login-button-landing-mobile');
+            const signupButtonLandingMobile = document.getElementById('signup-button-landing-mobile');
+            const performLoginButton = document.getElementById('perform-login-button');
+            const signupFromLogin = document.getElementById('signup-from-login'); // Link from login modal to signup (currently same modal)
+
+            // Modals and their buttons
+            const loginModal = document.getElementById('login-modal');
+            const paymentModal = document.getElementById('payment-modal');
+            const studyTipsModal = document.getElementById('study-tips-modal');
+            const quizGeneratorModal = document.getElementById('quiz-generator-modal');
+            const conceptSimplifierModal = document.getElementById('concept-simplifier-modal');
+
+            const closeLoginModal = document.getElementById('close-login-modal');
+            const closePaymentModal = document.getElementById('close-payment-modal');
+            const closeStudyTipsModal = document.getElementById('close-study-tips-modal');
+            const closeQuizGeneratorModal = document.getElementById('close-quiz-generator-modal');
+            const closeConceptSimplifierModal = document.getElementById('close-concept-simplifier-modal');
+
+            const upgradePremiumButton = document.getElementById('upgrade-premium-button'); // New button for payment post-login
+            const generateTipsButton = document.getElementById('generate-tips-button');
+            const generateQuizButton = document.getElementById('generate-quiz-button');
+            const simplifyConceptButton = document.getElementById('simplify-concept-button');
+
+            const logoutButtonNav = document.getElementById('logout-button-nav');
+            const logoutButtonMobile = document.getElementById('logout-button-mobile');
+
+            // Theme toggle elements
+            const themeToggleButtonNav = document.getElementById('theme-toggle-button-nav');
+            const themeToggleButtonMobile = document.getElementById('theme-toggle-button-mobile');
+            const themeIcon = document.getElementById('theme-icon');
+            const themeIconMobile = document.getElementById('theme-icon-mobile');
+
+            // --- State Management ---
+            let isLoggedIn = false;
+
+            // Function to set theme
+            function setTheme(isDarkMode) {
+                if (isDarkMode) {
+                    document.body.classList.add('dark-mode');
+                    if (themeIcon) themeIcon.textContent = '🌙';
+                    if (themeIconMobile) themeIconMobile.textContent = '🌙';
+                    localStorage.setItem('theme', 'dark');
+                } else {
+                    document.body.classList.remove('dark-mode');
+                    if (themeIcon) themeIcon.textContent = '☀️';
+                    if (themeIconMobile) themeIconMobile.textContent = '☀️';
+                    localStorage.setItem('theme', 'light');
+                }
+            }
+
+            // Initialize theme from localStorage
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'dark') {
+                setTheme(true);
+            } else {
+                setTheme(false); // Default to light mode if no preference or 'light'
+            }
+
+            // Theme toggle handler
+            function toggleTheme() {
+                const isDarkMode = document.body.classList.contains('dark-mode');
+                setTheme(!isDarkMode);
+            }
+
+            if (themeToggleButtonNav) {
+                themeToggleButtonNav.addEventListener('click', toggleTheme);
+            }
+            if (themeToggleButtonMobile) {
+                themeToggleButtonMobile.addEventListener('click', toggleTheme);
+            }
+
+            function updateUIForLoginState() {
+                console.log("UI updated for logged in state:", isLoggedIn); // Debugging message
+                if (isLoggedIn) {
+                    landingPage.classList.add('hidden');
+                    learningPlatformContainer.classList.remove('hidden');
+                    
+                    preLoginNav.classList.add('hidden'); // Hide pre-login desktop nav
+                    postLoginNav.classList.remove('hidden'); // Show post-login desktop nav
+                    preLoginMobileNav.classList.add('hidden'); // Hide pre-login mobile nav
+                    postLoginMobileNav.classList.remove('hidden'); // Show post-login mobile nav
+
+                    // Ensure dashboard is active after login
+                    showSection('dashboard');
+                } else {
+                    landingPage.classList.remove('hidden');
+                    learningPlatformContainer.classList.add('hidden');
+
+                    preLoginNav.classList.remove('hidden'); // Show pre-login desktop nav
+                    postLoginNav.classList.add('hidden'); // Hide post-login desktop nav (and thus logout button)
+                    preLoginMobileNav.classList.remove('hidden'); // Show pre-login mobile nav
+                    postLoginMobileNav.classList.add('hidden'); // Hide post-login mobile nav (and thus mobile logout button)
+                }
+                // Close mobile menu if open after state change
+                mobileMenu.classList.add('hidden');
+            }
+
+            // --- Login/Logout Handlers ---
+            performLoginButton.addEventListener('click', (e) => {
+                e.preventDefault(); // Prevent form submission
+                const passwordInput = document.getElementById('modal-password');
+                const emailInput = document.getElementById('modal-email');
+                if (emailInput.value === "shineirafasha@gmail.com" && passwordInput.value === correctPassword) {
+                    isLoggedIn = true;
+                    closeModal(loginModal);
+                    updateUIForLoginState();
+                } else {
+                    // In a real app, show an error message
+                    alert("Incorrect email or password. Please use shineirafasha@gmail.com and 1234567890."); // Using alert for simplicity in prototype
+                }
+            });
+
+            logoutButtonNav.addEventListener('click', () => {
+                isLoggedIn = false;
+                updateUIForLoginState();
+            });
+            logoutButtonMobile.addEventListener('click', () => {
+                isLoggedIn = false;
+                updateUIForLoginState();
+            });
+
+            // --- Initial UI Setup ---
+            updateUIForLoginState(); // Set initial state (logged out)
+
+            // --- Navigation Logic (Post-Login) ---
+            const navLinks = document.querySelectorAll('#post-login-nav .nav-link, #post-login-mobile-nav .nav-link');
+            const mainContentSections = document.querySelectorAll('.main-content-section');
+
+            function showSection(sectionId) {
+                mainContentSections.forEach(section => {
+                    section.classList.remove('active');
+                    section.classList.add('hidden');
+                });
+                document.getElementById(sectionId).classList.add('active');
+                document.getElementById(sectionId).classList.remove('hidden');
+
+                navLinks.forEach(link => {
+                    link.classList.remove('nav-active');
+                });
+                const activeLink = document.querySelector(`#post-login-nav .nav-link[data-section="${sectionId}"]`) ||
+                                   document.querySelector(`#post-login-mobile-nav .nav-link[data-section="${sectionId}"]`);
+                if (activeLink) {
+                    activeLink.classList.add('nav-active');
+                }
+            }
+
+            navLinks.forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const sectionId = e.target.dataset.section;
+                    showSection(sectionId);
+                    mobileMenu.classList.add('hidden'); // Close mobile menu if open
+                });
+            });
+
+            // --- Mobile Menu Toggle ---
+            mobileMenuButton.addEventListener('click', () => {
+                mobileMenu.classList.toggle('hidden');
+            });
+
+            // --- Subject Card Logic ---
+            const rwandaEduCardsContainer = document.getElementById('rwanda-edu-cards-container');
+            const subjectContentView = document.getElementById('subject-content-view');
+            const subjectTitle = document.getElementById('subject-title');
+            const subjectDetailContent = document.getElementById('subject-detail-content');
+            const backToSubjectsButton = document.getElementById('back-to-subjects');
+
+            const rwandaEduData = {
+                "pre-primary": {
+                    title: "📚 Pre-Primary Education (Nursery)",
+                    icon: "👶",
+                    description: "Age group: 3–6 years. Focus: Foundational skills — language, physical, social, emotional development.",
+                    content: `
+                        <p class="font-bold text-lg mb-2">Age group:</p>
+                        <ul class="list-disc list-inside ml-4 mb-4">
+                            <li>3–6 years</li>
+                        </ul>
+                        <p class="font-bold text-lg mb-2">Focus:</p>
+                        <ul class="list-disc list-inside ml-4 mb-4">
+                            <li>Foundational skills — language, physical, social, emotional development</li>
+                        </ul>
+                        <p class="font-bold text-lg mb-2">Learning areas by Class:</p>
+                        ${['Nursery 1', 'Nursery 2', 'Nursery 3'].map(nClass => `
+                            <h4 class="font-semibold text-md mt-4 mb-2">${nClass} Learning Areas</h4>
+                            <ul class="list-circle list-inside ml-6 mb-4">
+                                <li>Language (Kinyarwanda and English) <span class="text-sm text-blue-600 cursor-pointer hover:underline">(Explore content)</span></li>
+                                <li>Numeracy <span class="text-sm text-blue-600 cursor-pointer hover:underline">(Explore content)</span></li>
+                                <li>Creative Arts <span class="text-sm text-blue-600 cursor-pointer hover:underline">(Explore content)</span></li>
+                                <li>Hygiene <span class="text-sm text-blue-600 cursor-pointer hover:underline">(Explore content)</span></li>
+                                <li>Environment <span class="text-sm text-blue-600 cursor-pointer hover:underline">(Explore content)</span></li>
+                            </ul>
+                        `).join('')}
+                    `
+                },
+                "primary": {
+                    title: "🏫 Primary Education (P1–P6)",
+                    icon: "🎒",
+                    description: "Focus: Literacy, numeracy, critical thinking, creativity, and values.",
+                    content: `
+                        <p class="font-bold text-lg mb-2">Focus:</p>
+                        <ul class="list-disc list-inside ml-4 mb-4">
+                            <li>Literacy, numeracy, critical thinking, creativity, and values</li>
+                        </ul>
+                        <p class="font-bold text-lg mb-2">Subjects by Class:</p>
+                        ${['P1', 'P2', 'P3', 'P4', 'P5', 'P6'].map(pClass => `
+                            <h4 class="font-semibold text-md mt-4 mb-2">${pClass} Subjects</h4>
+                            <ul class="list-circle list-inside ml-6 mb-4">
+                                <li>English <span class="text-sm text-blue-600 cursor-pointer hover:underline">(Explore content)</span></li>
+                                <li>Kinyarwanda <span class="text-sm text-blue-600 cursor-pointer hover:underline">(Explore content)</span></li>
+                                <li>Mathematics <span class="text-sm text-blue-600 cursor-pointer hover:underline">(Explore content)</span></li>
+                                <li>Science and Elementary Technology <span class="text-sm text-blue-600 cursor-pointer hover:underline">(Explore content)</span></li>
+                                <li>Social Studies and Religious Education <span class="text-sm text-blue-600 cursor-pointer hover:underline">(Explore content)</span></li>
+                                <li>Creative Arts <span class="text-sm text-blue-600 cursor-pointer hover:underline">(Explore content)</span></li>
+                                <li>ICT <span class="text-sm text-blue-600 cursor-pointer hover:underline">(Explore content)</span></li>
+                                ${pClass === 'P4' || pClass === 'P5' || pClass === 'P6' ? `<li>French <span class="text-sm text-blue-600 cursor-pointer hover:underline">(Explore content)</span></li>` : ''}
+                            </ul>
+                        `).join('')}
+                    `
+                },
+                "ordinary-level": {
+                    title: "🏫 Ordinary Level (S1–S3)",
+                    icon: "📝",
+                    description: "Core subjects for lower secondary education.",
+                    content: `
+                        <p class="font-bold text-lg mb-2">Core subjects by Class:</p>
+                        ${['S1', 'S2', 'S3'].map(sClass => `
+                            <h4 class="font-semibold text-md mt-4 mb-2">${sClass} Subjects</h4>
+                            <ul class="list-circle list-inside ml-6 mb-4">
+                                <li>Mathematics <span class="text-sm text-blue-600 cursor-pointer hover:underline">(Explore content)</span></li>
+                                <li>English <span class="text-sm text-blue-600 cursor-pointer hover:underline">(Explore content)</span></li>
+                                <li>Kinyarwanda <span class="text-sm text-blue-600 cursor-pointer hover:underline">(Explore content)</span></li>
+                                <li>French <span class="text-sm text-blue-600 cursor-pointer hover:underline">(Explore content)</span></li>
+                                <li>Science & Elementary Technology <span class="text-sm text-blue-600 cursor-pointer hover:underline">(Explore content)</span></li>
+                                <li>Physics <span class="text-sm text-blue-600 cursor-pointer hover:underline">(Explore content)</span></li>
+                                <li>Chemistry <span class="text-sm text-blue-600 cursor-pointer hover:underline">(Explore content)</span></li>
+                                <li>Biology <span class="text-sm text-blue-600 cursor-pointer hover:underline">(Explore content)</span></li>
+                                <li>Geography <span class="text-sm text-blue-600 cursor-pointer hover:underline">(Explore content)</span></li>
+                                <li>History and Citizenship <span class="text-sm text-blue-600 cursor-pointer hover:underline">(Explore content)</span></li>
+                                <li>Entrepreneurship <span class="text-sm text-blue-600 cursor-pointer hover:underline">(Explore content)</span></li>
+                                <li>ICT <span class="text-sm text-blue-600 cursor-pointer hover:underline">(Explore content)</span></li>
+                                <li>Religion and Ethics <span class="text-sm text-blue-600 cursor-pointer hover:underline">(Explore content)</span></li>
+                            </ul>
+                        `).join('')}
+                    `
+                },
+                "advanced-level": {
+                    title: "🧑‍🎓 Advanced Level (S4–S6)",
+                    icon: "🎓",
+                    description: "Students choose a combination based on their interest and future career goals.",
+                    content: `
+                        <p class="text-slate-700 mb-4">Students choose a combination based on their interest and future career goals.</p>
+                        
+                        <h4 class="font-semibold text-lg mt-4 mb-2">✔️ Science Section</h4>
+                        <ul class="list-disc list-inside ml-4 mb-4">
+                            <li><strong>Mathematics</strong>
+                                <ul class="list-circle list-inside ml-6">
+                                    <li>S4 <span class="text-sm text-blue-600 cursor-pointer hover:underline">(Explore content)</span></li>
+                                    <li>S5 <span class="text-sm text-blue-600 cursor-pointer hover:underline">(Explore content)</span></li>
+                                    <li>S6 <span class="text-sm text-blue-600 cursor-pointer hover:underline">(Explore content)</span></li>
+                                </ul>
+                            </li>
+                            <li><strong>Physics</strong>
+                                <ul class="list-circle list-inside ml-6">
+                                    <li>S4 <span class="text-sm text-blue-600 cursor-pointer hover:underline">(Explore content)</span></li>
+                                    <li>S5 <span class="text-sm text-blue-600 cursor-pointer hover:underline">(Explore content)</span></li>
+                                    <li>S6 <span class="text-sm text-blue-600 cursor-pointer hover:underline">(Explore content)</span></li>
+                                </ul>
+                            </li>
+                            <li><strong>Chemistry</strong>
+                                <ul class="list-circle list-inside ml-6">
+                                    <li>S4 <span class="text-sm text-blue-600 cursor-pointer hover:underline">(Explore content)</span></li>
+                                    <li>S5 <span class="text-sm text-blue-600 cursor-pointer hover:underline">(Explore content)</span></li>
+                                    <li>S6 <span class="text-sm text-blue-600 cursor-pointer hover:underline">(Explore content)</span></li>
+                                </ul>
+                            </li>
+                            <li><strong>Biology</strong>
+                                <ul class="list-circle list-inside ml-6">
+                                    <li>S4 <span class="text-sm text-blue-600 cursor-pointer hover:underline">(Explore content)</span></li>
+                                    <li>S5 <span class="text-sm text-blue-600 cursor-pointer hover:underline">(Explore content)</span></li>
+                                    <li>S6 <span class="text-sm text-blue-600 cursor-pointer hover:underline">(Explore content)</span></li>
+                                </ul>
+                            </li>
+                            <li><strong>Geography (for MPG combination)</strong>
+                                <ul class="list-circle list-inside ml-6">
+                                    <li>S4 <span class="text-sm text-blue-600 cursor-pointer hover:underline">(Explore content)</span></li>
+                                    <li>S5 <span class="text-sm text-blue-600 cursor-pointer hover:underline">(Explore content)</span></li>
+                                    <li>S6 <span class="text-sm text-blue-600 cursor-pointer hover:underline">(Explore content)</span></li>
+                                </ul>
+                            </li>
+                        </ul>
+
+                        <h4 class="font-semibold text-lg mt-4 mb-2">✔️ Humanities Section</h4>
+                        <ul class="list-disc list-inside ml-4 mb-4">
+                            <li><strong>History</strong>
+                                <ul class="list-circle list-inside ml-6">
+                                    <li>S4 <span class="text-sm text-blue-600 cursor-pointer hover:underline">(Explore content)</span></li>
+                                    <li>S5 <span class="text-sm text-blue-600 cursor-pointer hover:underline">(Explore content)</span></li>
+                                    <li>S6 <span class="text-sm text-blue-600 cursor-pointer hover:underline">(Explore content)</span></li>
+                                </ul>
+                            </li>
+                            <li><strong>Economics</strong>
+                                <ul class="list-circle list-inside ml-6">
+                                    <li>S4 <span class="text-sm text-blue-600 cursor-pointer hover:underline">(Explore content)</span></li>
+                                    <li>S5 <span class="text-sm text-blue-600 cursor-pointer hover:underline">(Explore content)</span></li>
+                                    <li>S6 <span class="text-sm text-blue-600 cursor-pointer hover:underline">(Explore content)</span></li>
+                                </ul>
+                            </li>
+                            <li><strong>Geography (for HEG/HGL combinations)</strong>
+                                <ul class="list-circle list-inside ml-6">
+                                    <li>S4 <span class="text-sm text-blue-600 cursor-pointer hover:underline">(Explore content)</span></li>
+                                    <li>S5 <span class="text-sm text-blue-600 cursor-pointer hover:underline">(Explore content)</span></li>
+                                    <li>S6 <span class="text-sm text-blue-600 cursor-pointer hover:underline">(Explore content)</span></li>
+                                </ul>
+                            </li>
+                            <li><strong>Literature</strong>
+                                <ul class="list-circle list-inside ml-6">
+                                    <li>S4 <span class="text-sm text-blue-600 cursor-pointer hover:underline">(Explore content)</span></li>
+                                    <li>S5 <span class="text-sm text-blue-600 cursor-pointer hover:underline">(Explore content)</span></li>
+                                    <li>S6 <span class="text-sm text-blue-600 cursor-pointer hover:underline">(Explore content)</span></li>
+                                </ul>
+                            </li>
+                        </ul>
+
+                        <h4 class="font-semibold text-lg mt-4 mb-2">✔️ Language Section</h4>
+                        <ul class="list-disc list-inside ml-4 mb-4">
+                            <li><strong>Kinyarwanda</strong>
+                                <ul class="list-circle list-inside ml-6">
+                                    <li>S4 <span class="text-sm text-blue-600 cursor-pointer hover:underline">(Explore content)</span></li>
+                                    <li>S5 <span class="text-sm text-blue-600 cursor-pointer hover:underline">(Explore content)</span></li>
+                                    <li>S6 <span class="text-sm text-blue-600 cursor-pointer hover:underline">(Explore content)</span></li>
+                                </ul>
+                            </li>
+                            <li><strong>English</strong>
+                                <ul class="list-circle list-inside ml-6">
+                                    <li>S4 <span class="text-sm text-blue-600 cursor-pointer hover:underline">(Explore content)</span></li>
+                                    <li>S5 <span class="text-sm text-blue-600 cursor-pointer hover:underline">(Explore content)</span></li>
+                                    <li>S6 <span class="text-sm text-blue-600 cursor-pointer hover:underline">(Explore content)</span></li>
+                                </ul>
+                            </li>
+                            <li><strong>French</strong>
+                                <ul class="list-circle list-inside ml-6">
+                                    <li>S4 <span class="text-sm text-blue-600 cursor-pointer hover:underline">(Explore content)</span></li>
+                                    <li>S5 <span class="text-sm text-blue-600 cursor-pointer hover:underline">(Explore content)</span></li>
+                                    <li>S6 <span class="text-sm text-blue-600 cursor-pointer hover:underline">(Explore content)</span></li>
+                                </ul>
+                            </li>
+                        </ul>
+
+                        <h4 class="font-semibold text-lg mt-4 mb-2">✔️ TVET (Technical and Vocational Education) Section</h4>
+                        <ul class="list-disc list-inside ml-4">
+                            <li><strong>Computer Systems</strong>
+                                <ul class="list-circle list-inside ml-6">
+                                    <li>S4 <span class="text-sm text-blue-600 cursor-pointer hover:underline">(Explore content)</span></li>
+                                    <li>S5 <span class="text-sm text-blue-600 cursor-pointer hover:underline">(Explore content)</span></li>
+                                    <li>S6 <span class="text-sm text-blue-600 cursor-pointer hover:underline">(Explore content)</span></li>
+                                </ul>
+                            </li>
+                            <li><strong>Carpentry</strong>
+                                <ul class="list-circle list-inside ml-6">
+                                    <li>S4 <span class="text-sm text-blue-600 cursor-pointer hover:underline">(Explore content)</span></li>
+                                    <li>S5 <span class="text-sm text-blue-600 cursor-pointer hover:underline">(Explore content)</span></li>
+                                    <li>S6 <span class="text-sm text-blue-600 cursor-pointer hover:underline">(Explore content)</span></li>
+                                </ul>
+                            </li>
+                            <li><strong>Agriculture</strong>
+                                <ul class="list-circle list-inside ml-6">
+                                    <li>S4 <span class="text-sm text-blue-600 cursor-pointer hover:underline">(Explore content)</span></li>
+                                    <li>S5 <span class="text-sm text-blue-600 cursor-pointer hover:underline">(Explore content)</span></li>
+                                    <li>S6 <span class="text-sm text-blue-600 cursor-pointer hover:underline">(Explore content)</span></li>
+                                </ul>
+                            </li>
+                            <li><strong>Electricity</strong>
+                                <ul class="list-circle list-inside ml-6">
+                                    <li>S4 <span class="text-sm text-blue-600 cursor-pointer hover:underline">(Explore content)</span></li>
+                                    <li>S5 <span class="text-sm text-blue-600 cursor-pointer hover:underline">(Explore content)</span></li>
+                                    <li>S6 <span class="text-sm text-blue-600 cursor-pointer hover:underline">(Explore content)</span></li>
+                                </ul>
+                            </li>
+                            <li><strong>Culinary Arts</strong>
+                                <ul class="list-circle list-inside ml-6">
+                                    <li>S4 <span class="text-sm text-blue-600 cursor-pointer hover:underline">(Explore content)</span></li>
+                                    <li>S5 <span class="text-sm text-blue-600 cursor-pointer hover:underline">(Explore content)</span></li>
+                                    <li>S6 <span class="text-sm text-blue-600 cursor-pointer hover:underline">(Explore content)</span></li>
+                                </ul>
+                            </li>
+                        </ul>
+                    `
+                },
+                "national-exams": {
+                    title: "✍️ National Exams",
+                    icon: "🏆",
+                    description: "Key national examinations at different stages of the education system.",
+                    content: `
+                        <p class="font-bold text-lg mb-2">National Examinations:</p>
+                        <ul class="list-disc list-inside ml-4">
+                            <li>End of Primary: P6 National Exams <span class="text-sm text-blue-600 cursor-pointer hover:underline">(Practice Exams)</span></li>
+                            <li>End of Lower Secondary: S3 National Exams <span class="text-sm text-blue-600 cursor-pointer hover:underline">(Practice Exams)</span></li>
+                            <li>End of Upper Secondary: S6 National Exams <span class="text-sm text-blue-600 cursor-pointer hover:underline">(Practice Exams)</span></li>
+                        </ul>
+                    `
+                }
+            };
+
+            // Function to render Rwandan Education System cards
+            function renderRwandaEduCards() {
+                rwandaEduCardsContainer.innerHTML = ''; // Clear existing cards
+                for (const key in rwandaEduData) {
+                    const data = rwandaEduData[key];
+                    const cardDiv = document.createElement('div');
+                    cardDiv.className = 'bg-white p-6 rounded-xl shadow-lg cursor-pointer hover:shadow-xl transition rwanda-edu-card';
+                    cardDiv.dataset.level = key; // Use data-level to identify which content to load
+                    cardDiv.innerHTML = `
+                        <div class="flex items-center gap-4 mb-4">
+                            <span class="text-5xl text-blue-500">${data.icon}</span>
+                            <h3 class="text-2xl font-bold">${data.title}</h3>
+                        </div>
+                        <p class="text-slate-600">${data.description}</p>
+                    `;
+                    rwandaEduCardsContainer.appendChild(cardDiv);
+                }
+
+                // Add event listeners to the newly created cards
+                document.querySelectorAll('.rwanda-edu-card').forEach(card => {
+                    card.addEventListener('click', () => {
+                        const levelId = card.dataset.level;
+                        const data = rwandaEduData[levelId];
+
+                        if (data) {
+                            subjectTitle.textContent = data.title;
+                            subjectDetailContent.innerHTML = data.content;
+                            
+                            rwandaEduCardsContainer.classList.add('hidden'); // Hide cards container
+                            subjectContentView.classList.remove('hidden'); // Show detail view
+                        }
+                    });
+                });
+            }
+
+            // Call this function when the Subjects tab is activated
+            document.querySelector('.nav-link[data-section="subjects"]').addEventListener('click', (e) => {
+                e.preventDefault();
+                showSection('subjects');
+                renderRwandaEduCards(); // Render cards when subjects section is shown
+                subjectContentView.classList.add('hidden'); // Ensure detail view is hidden initially
+                rwandaEduCardsContainer.classList.remove('hidden'); // Ensure cards are visible initially
+            });
+
+            backToSubjectsButton.addEventListener('click', () => {
+                subjectContentView.classList.add('hidden');
+                rwandaEduCardsContainer.classList.remove('hidden'); // Show cards again
+            });
+
+            // --- Modal Open/Close Logic ---
+            function openModal(modal) {
+                modal.style.display = 'flex';
+                document.body.style.overflow = 'hidden'; // Prevent scrolling background
+            }
+
+            function closeModal(modal) {
+                modal.style.display = 'none';
+                document.body.style.overflow = ''; // Restore scrolling
+            }
+
+            // Landing Page Buttons
+            loginButtonHero.addEventListener('click', () => openModal(loginModal));
+            signupButtonHero.addEventListener('click', () => openModal(loginModal)); // Signup also opens login modal for now
+            loginButtonLandingMobile.addEventListener('click', () => { openModal(loginModal); mobileMenu.classList.add('hidden'); });
+            signupButtonLandingMobile.addEventListener('click', () => { openModal(loginModal); mobileMenu.classList.add('hidden'); });
+            signupFromLogin.addEventListener('click', (e) => { e.preventDefault(); /* In a real app, navigate to a signup form */ alert("Signup functionality coming soon! For now, you can use the login form."); });
+
+
+            // Post-Login Buttons
+            upgradePremiumButton.addEventListener('click', () => openModal(paymentModal));
+            generateTipsButton.addEventListener('click', () => openModal(studyTipsModal));
+            generateQuizButton.addEventListener('click', () => openModal(quizGeneratorModal));
+            simplifyConceptButton.addEventListener('click', () => openModal(conceptSimplifierModal));
+
+            // Close buttons for modals
+            closeLoginModal.addEventListener('click', () => closeModal(loginModal));
+            closePaymentModal.addEventListener('click', () => closeModal(paymentModal));
+            closeStudyTipsModal.addEventListener('click', () => closeModal(studyTipsModal));
+            closeQuizGeneratorModal.addEventListener('click', () => closeModal(quizGeneratorModal));
+            closeConceptSimplifierModal.addEventListener('click', () => closeModal(conceptSimplifierModal));
+
+            // Close modal if clicked outside content
+            window.addEventListener('click', (event) => {
+                if (event.target == loginModal) closeModal(loginModal);
+                if (event.target == paymentModal) closeModal(paymentModal);
+                if (event.target == studyTipsModal) closeModal(studyTipsModal);
+                if (event.target == quizGeneratorModal) closeModal(quizGeneratorModal);
+                if (event.target == conceptSimplifierModal) closeModal(conceptSimplifierModal);
+            });
+
+            // --- Gemini API Integration Helper Function ---
+            async function callGeminiAPI(prompt) {
+                let chatHistory = [];
+                chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+                const payload = { contents: chatHistory };
+                const apiKey = ""; // If you want to use models other than gemini-2.0-flash or imagen-3.0-generate-002, provide an API key here. Otherwise, leave this as-is.
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+                try {
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    const result = await response.json();
+                    if (result.candidates && result.candidates.length > 0 &&
+                        result.candidates[0].content && result.candidates[0].content.parts &&
+                        result.candidates[0].content.parts.length > 0) {
+                        return result.candidates[0].content.parts[0].text;
+                    } else {
+                        return "Sorry, I couldn't get a response. Please try again.";
+                    }
+                } catch (error) {
+                    console.error("Error calling Gemini API:", error);
+                    return "An error occurred while connecting to the AI. Please try again later.";
+                }
+            }
+
+            // --- AI Tutor Chat Logic ---
+            const aiTutorInput = document.getElementById('ai-tutor-input');
+            const aiTutorSendButton = document.getElementById('ai-tutor-send-button');
+            const chatMessagesContainer = document.getElementById('chat-messages');
+
+            function addMessageToChat(message, isUser) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `flex ${isUser ? 'justify-end' : 'justify-start'}`;
+                const messageBubble = document.createElement('div');
+                messageBubble.className = `p-3 rounded-lg max-w-[75%] ${isUser ? 'bg-blue-600 text-white' : 'bg-blue-100 text-blue-800'}`;
+                messageBubble.textContent = message;
+                messageDiv.appendChild(messageBubble);
+                chatMessagesContainer.appendChild(messageDiv);
+                chatMessagesContainer.scrollTop = chatMessagesContainer.scrollHeight; // Scroll to bottom
+            }
+
+            aiTutorSendButton.addEventListener('click', async () => {
+                const userMessage = aiTutorInput.value.trim();
+                if (userMessage) {
+                    addMessageToChat(userMessage, true);
+                    aiTutorInput.value = '';
+
+                    const loadingDiv = document.createElement('div');
+                    loadingDiv.className = 'flex justify-start loading-indicator';
+                    loadingDiv.innerHTML = '<div class="loading-spinner"></div>';
+                    chatMessagesContainer.appendChild(loadingDiv);
+                    chatMessagesContainer.scrollTop = chatMessagesContainer.scrollHeight;
+
+                    const aiResponse = await callGeminiAPI(userMessage);
+                    chatMessagesContainer.removeChild(loadingDiv); // Remove loading indicator
+                    addMessageToChat(aiResponse, false);
+                }
+            });
+
+            aiTutorInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    aiTutorSendButton.click();
+                }
+            });
+
+            // --- Study Tips Logic ---
+            const tipsTopicInput = document.getElementById('tips-topic-input');
+            const getTipsButton = document.getElementById('get-tips-button');
+            const tipsOutput = document.getElementById('tips-output');
+            const tipsLoading = document.getElementById('tips-loading');
+
+            getTipsButton.addEventListener('click', async () => {
+                const topic = tipsTopicInput.value.trim();
+                let prompt = "Provide 3 effective and actionable study tips for a student.";
+                if (topic) {
+                    prompt = `Provide 3 effective and actionable study tips for a student focusing on "${topic}".`;
+                }
+
+                tipsOutput.innerHTML = ''; // Clear previous tips
+                tipsLoading.classList.remove('hidden'); // Show loading spinner
+
+                const generatedTips = await callGeminiAPI(prompt);
+                
+                tipsLoading.classList.add('hidden'); // Hide loading spinner
+                tipsOutput.innerHTML = generatedTips.replace(/\n/g, '<br>'); // Display tips, preserve newlines
+            });
+
+            // --- Quiz Generator Logic ---
+            const quizTopicInput = document.getElementById('quiz-topic-input');
+            const getQuizButton = document.getElementById('get-quiz-button');
+            const quizOutput = document.getElementById('quiz-output');
+            const quizLoading = document.getElementById('quiz-loading');
+
+            getQuizButton.addEventListener('click', async () => {
+                const topicOrText = quizTopicInput.value.trim();
+                if (!topicOrText) {
+                    quizOutput.innerHTML = '<p class="text-red-500">Please enter a topic or text to generate a quiz.</p>';
+                    return;
+                }
+                let prompt = `Generate 3 multiple-choice quiz questions about "${topicOrText}". For each question, provide 4 options (A, B, C, D) and clearly indicate the correct answer. Format as: "Question: ... A) ... B) ... C) ... D) ... Correct Answer: ..."`;
+
+                quizOutput.innerHTML = ''; // Clear previous quiz
+                quizLoading.classList.remove('hidden'); // Show loading spinner
+
+                const generatedQuiz = await callGeminiAPI(prompt);
+                
+                quizLoading.classList.add('hidden'); // Hide loading spinner
+                quizOutput.innerHTML = generatedQuiz.replace(/\n/g, '<br>'); // Display quiz, preserve newlines
+            });
+
+            // --- Concept Simplifier Logic ---
+            const simplifyInput = document.getElementById('simplify-input');
+            const getSimplifiedButton = document.getElementById('get-simplified-button');
+            const simplifiedOutput = document.getElementById('simplified-output');
+            const simplifiedLoading = document.getElementById('simplified-loading');
+
+            getSimplifiedButton.addEventListener('click', async () => {
+                const conceptOrText = simplifyInput.value.trim();
+                if (!conceptOrText) {
+                    simplifiedOutput.innerHTML = '<p class="text-red-500">Please enter a concept or text to simplify.</p>';
+                    return;
+                }
+                let prompt = `Explain the following concept in simple terms, suitable for a high school student: "${conceptOrText}".`;
+
+                simplifiedOutput.innerHTML = ''; // Clear previous explanation
+                simplifiedLoading.classList.remove('hidden'); // Show loading spinner
+
+                const generatedExplanation = await callGeminiAPI(prompt);
+                
+                simplifiedLoading.classList.add('hidden'); // Hide loading spinner
+                simplifiedOutput.innerHTML = generatedExplanation.replace(/\n/g, '<br>'); // Display explanation, preserve newlines
+            });
+        });
+    </script>
+</body>
+</html>
