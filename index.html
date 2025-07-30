@@ -183,7 +183,7 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background-color: #2196f3;
+            background-color: #3b82f6;
             -webkit-transition: 0.4s;
             transition: 0.4s;
             z-index: 0;
@@ -197,7 +197,7 @@
             width: 26px;
             left: 4px;
             bottom: 4px;
-            background-color: yellow;
+            background-color: rgb(230, 230, 190);
             -webkit-transition: 0.4s;
             transition: 0.4s;
         }
@@ -207,7 +207,7 @@
         }
 
         input:focus + .slider {
-            box-shadow: 0 0 1px #2196f3;
+            box-shadow: 0 0 1px 3b82f6;
         }
 
         input:checked + .slider .sun-moon {
@@ -437,7 +437,7 @@
             animation: fadeInOut 7s 1s 2s 4s 5s infinite; /* 7s duration,, infinite loop */
             font-weight: 600;
             color: #3b82f6; /* Blue color for the animated text */
-            font-size: .25rem; /* Updated font size */
+            font-size: 1.30rem; /* Updated font size */
             margin-top: 0.5rem; /* Updated margin top */
         }
 
@@ -463,7 +463,22 @@
             <!-- Desktop Navigation -->
             <div id="desktop-nav" class="hidden md:flex space-x-4 items-center">
                 <!-- Theme Toggle for Desktop -->
-                <label class="switch">
+               
+                <!-- Pre-Login Navigation (Desktop) -->
+                <div id="pre-login-nav-desktop" class="flex space-x-8">
+                    <a href="#how-it-works" class="text-slate-600 hover:text-blue-600 transition">How it Works</a>
+                    <a href="#landing-features" class="text-slate-600 hover:text-blue-600 transition">Features</a>
+                </div>
+                <!-- Post-Login Navigation (Desktop) -->
+                <div id="post-login-nav-desktop" class="hidden flex space-x-4 items-center">
+                    <a href="#" data-section="dashboard" class="nav-link nav-active text-slate-600 hover:text-blue-600 transition">Dashboard</a>
+                    <a href="#" data-section="subjects" class="nav-link text-slate-600 hover:text-blue-600 transition">Subjects</a>
+                    <a href="#" data-section="ai-tutor" class="nav-link text-slate-600 hover:text-blue-600 transition">AI Tutor</a>
+                    <a href="#" data-section="memory-training" class="nav-link text-slate-600 hover:text-blue-600 transition">Memory Training</a>
+                    <a href="#" data-section="gamified-learning" class="nav-link text-slate-600 hover:text-blue-600 transition">Gamified</a>
+                    <button id="logout-button-nav" class="bg-red-600 text-white font-bold py-2 px-4 rounded-full hover:bg-red-700 transition">Logout</button>
+                </div>
+                 <label class="switch">
                     <input id="theme-toggle-input-desktop" type="checkbox" />
                     <div class="slider round">
                         <div class="sun-moon">
@@ -522,20 +537,6 @@
                     </div>
                 </label>
 
-                <!-- Pre-Login Navigation (Desktop) -->
-                <div id="pre-login-nav-desktop" class="flex space-x-8">
-                    <a href="#how-it-works" class="text-slate-600 hover:text-blue-600 transition">How it Works</a>
-                    <a href="#landing-features" class="text-slate-600 hover:text-blue-600 transition">Features</a>
-                </div>
-                <!-- Post-Login Navigation (Desktop) -->
-                <div id="post-login-nav-desktop" class="hidden flex space-x-4 items-center">
-                    <a href="#" data-section="dashboard" class="nav-link nav-active text-slate-600 hover:text-blue-600 transition">Dashboard</a>
-                    <a href="#" data-section="subjects" class="nav-link text-slate-600 hover:text-blue-600 transition">Subjects</a>
-                    <a href="#" data-section="ai-tutor" class="nav-link text-slate-600 hover:text-blue-600 transition">AI Tutor</a>
-                    <a href="#" data-section="memory-training" class="nav-link text-slate-600 hover:text-blue-600 transition">Memory Training</a>
-                    <a href="#" data-section="gamified-learning" class="nav-link text-slate-600 hover:text-blue-600 transition">Gamified</a>
-                    <button id="logout-button-nav" class="bg-red-600 text-white font-bold py-2 px-4 rounded-full hover:bg-red-700 transition">Logout</button>
-                </div>
             </div>
             <button id="mobile-menu-button" class="md:hidden text-slate-800">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
@@ -543,7 +544,12 @@
         </nav>
         <!-- Mobile Menu (Dynamic based on login state) -->
         <div id="mobile-menu" class="hidden md:hidden px-6 pb-4">
-            <!-- Theme Toggle for Mobile -->
+            
+            <!-- Pre-Login Mobile Navigation -->
+            <div id="pre-login-mobile-nav" class="flex flex-col">
+                <a href="#how-it-works" class="nav-link block py-2 text-slate-600 hover:text-blue-600 transition">How it Works</a>
+                <a href="#landing-features" class="nav-link block py-2 text-slate-600 hover:text-blue-600 transition">Features</a>
+                  <!-- Theme Toggle for Mobile -->
             <label class="switch mb-4">
                 <input id="theme-toggle-input-mobile" type="checkbox" />
                 <div class="slider round">
@@ -602,10 +608,6 @@
                     </div>
                 </div>
             </label>
-            <!-- Pre-Login Mobile Navigation -->
-            <div id="pre-login-mobile-nav" class="flex flex-col">
-                <a href="#how-it-works" class="nav-link block py-2 text-slate-600 hover:text-blue-600 transition">How it Works</a>
-                <a href="#landing-features" class="nav-link block py-2 text-slate-600 hover:text-blue-600 transition">Features</a>
                 <button id="login-button-mobile-menu" class="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded-full hover:bg-blue-700 transition mt-2">Login</button>
                 <button id="signup-button-mobile-menu" class="w-full bg-green-600 text-white font-bold py-2 px-4 rounded-full hover:bg-green-700 transition mt-2">Sign Up</button>
             </div>
@@ -912,19 +914,23 @@
                             <h3 class="text-xl font-semibold mb-4 text-center">Subject Leaderboard (Physics)</h3>
                             <ul class="space-y-3 text-slate-700">
                                 <li class="flex justify-between items-center bg-slate-50 p-3 rounded-lg">
-                                    <span class="font-bold">#1 Jane Doe</span>
+                                    <span class="font-bold">#1 Sano Leon Kevin</span>
+                                    <span class="text-blue-600">1450 pts</span>
+                                </li>
+                                <li class="flex justify-between items-center bg-slate-50 p-3 rounded-lg">
+                                    <span class="font-bold">#2 Divin Irakoze Dusenge</span>
                                     <span class="text-blue-600">1250 pts</span>
                                 </li>
                                 <li class="flex justify-between items-center bg-slate-50 p-3 rounded-lg">
-                                    <span class="font-bold">#2 John Smith</span>
+                                    <span class="font-bold">#3 Schadrack Irafasha</span>
                                     <span class="text-blue-600">1180 pts</span>
                                 </li>
                                 <li class="flex justify-between items-center bg-blue-100 p-3 rounded-lg border-2 border-blue-300">
-                                    <span class="font-bold text-blue-800">#7 You</span>
+                                    <span class="font-bold text-blue-800">#4 You</span>
                                     <span class="font-bold text-blue-800">920 pts</span>
                                 </li>
                                 <li class="flex justify-between items-center bg-slate-50 p-3 rounded-lg">
-                                    <span class="font-bold">#8 Alice Brown</span>
+                                    <span class="font-bold">#5 Joello Rutayisire</span>
                                     <span class="text-blue-600">890 pts</span>
                                 </li>
                             </ul>
